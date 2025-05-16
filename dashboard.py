@@ -18,11 +18,11 @@ def df_to_json(df, name_metrics):
     Returns:
         str: JSON string representation of the DataFrame.
     """
-    return df.to_json(f"/Users/trungtran/Documents/VNS/MD/data/{name_metrics}.json",indent=4, date_format='iso')
+    return df.to_json(f"{name_metrics}.json",indent=4, date_format='iso')
 
 # Load data
 def load_data():
-    df = pd.read_csv("/Users/trungtran/Documents/VNS/MD/data/sample_data_fishery_thailand.csv", delimiter=",")
+    df = pd.read_csv("sample_data_fishery_thailand.csv", delimiter=",")
     df['date'] = pd.to_datetime(df['date'])  # Ensure 'date' is in datetime format
     df['province'] = df['province'].astype('category')
     df['type'] = df['type'].astype('category')
@@ -369,53 +369,53 @@ def export_metrics_to_json(data, chart_name, file_path):
         json.dump(json_data, json_file, indent=4)
     print(f"Chart data exported to {file_path}")
 
-# Example: Export Production by Type Chart
-production_by_type_data = production_by_type.to_dict(orient="records")
-export_chart_to_json(
-    data=production_by_type_data,
-    chart_name="production_by_type",
-    file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/production_by_type.json"
-)
+# # Example: Export Production by Type Chart
+# production_by_type_data = production_by_type.to_dict(orient="records")
+# export_chart_to_json(
+#     data=production_by_type_data,
+#     chart_name="production_by_type",
+#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/production_by_type.json"
+# )
 
-# Example: Export Value by Type Chart
-value_by_type_data = value_by_type.to_dict(orient="records")
-export_chart_to_json(
-    data=value_by_type_data,
-    chart_name="value_by_type",
-    file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/value_by_type.json"
-)
+# # Example: Export Value by Type Chart
+# value_by_type_data = value_by_type.to_dict(orient="records")
+# export_chart_to_json(
+#     data=value_by_type_data,
+#     chart_name="value_by_type",
+#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/value_by_type.json"
+# )
 
-# Example: Export Export and Import Value Over Time Chart
-export_import_data = export_import_over_time.to_dict(orient="records")
-export_chart_to_json(
-    data=export_import_data,
-    chart_name="export_import_over_time",
-    file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/export_import_over_time.json"
-)
+# # Example: Export Export and Import Value Over Time Chart
+# export_import_data = export_import_over_time.to_dict(orient="records")
+# export_chart_to_json(
+#     data=export_import_data,
+#     chart_name="export_import_over_time",
+#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/export_import_over_time.json"
+# )
 
-# Example: Export Net Trade Value Over Time Chart
-net_trade_data = net_trade_over_time.to_dict(orient="records")
-export_chart_to_json(
-    data=net_trade_data,
-    chart_name="net_trade_over_time",
-    file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/net_trade_over_time.json"
-)
+# # Example: Export Net Trade Value Over Time Chart
+# net_trade_data = net_trade_over_time.to_dict(orient="records")
+# export_chart_to_json(
+#     data=net_trade_data,
+#     chart_name="net_trade_over_time",
+#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/net_trade_over_time.json"
+# )
 
-# Example: Export Top Provinces by Production Chart
-top_production_data = top_production_provinces.to_dict(orient="records")
-export_chart_to_json(
-    data=top_production_data,
-    chart_name="top_provinces_by_production",
-    file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/top_provinces_by_production.json"
-)
+# # Example: Export Top Provinces by Production Chart
+# top_production_data = top_production_provinces.to_dict(orient="records")
+# export_chart_to_json(
+#     data=top_production_data,
+#     chart_name="top_provinces_by_production",
+#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/top_provinces_by_production.json"
+# )
 
-# Example: Export Top Provinces by Net Trade Value Chart
-top_net_trade_data = top_net_trade_provinces.to_dict(orient="records")
-export_chart_to_json(
-    data=top_net_trade_data,
-    chart_name="top_provinces_by_net_trade_value",
-    file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/top_provinces_by_net_trade_value.json"
-)
+# # Example: Export Top Provinces by Net Trade Value Chart
+# top_net_trade_data = top_net_trade_provinces.to_dict(orient="records")
+# export_chart_to_json(
+#     data=top_net_trade_data,
+#     chart_name="top_provinces_by_net_trade_value",
+#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/top_provinces_by_net_trade_value.json"
+# )
 
 # total_production = filtered_df['total_quant_of_product'].sum().to_dict(orient="records")
 # export_metrics_to_json(
