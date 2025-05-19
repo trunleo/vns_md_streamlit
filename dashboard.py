@@ -22,7 +22,7 @@ def df_to_json(df, name_metrics):
 
 # Load data
 def load_data():
-    df = pd.read_csv("/Users/trungtran/Documents/VNS/MD/data/sample_data_fishery_thailand.csv", delimiter=",")
+    df = pd.read_csv("sample_data_fishery_thailand.csv", delimiter=",")
     df['date'] = pd.to_datetime(df['date'])  # Ensure 'date' is in datetime format
     df['province'] = df['province'].astype('category')
     df['type'] = df['type'].astype('category')
