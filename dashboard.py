@@ -18,11 +18,11 @@ def df_to_json(df, name_metrics):
     Returns:
         str: JSON string representation of the DataFrame.
     """
-    return df.to_json(f"{name_metrics}.json",indent=4, date_format='iso')
+    return df.to_json(f"/Users/trungtran/Documents/VNS/MD/data/{name_metrics}.json",indent=4, date_format='iso')
 
 # Load data
 def load_data():
-    df = pd.read_csv("sample_data_fishery_thailand.csv", delimiter=",")
+    df = pd.read_csv("/Users/trungtran/Documents/VNS/MD/data/sample_data_fishery_thailand.csv", delimiter=",")
     df['date'] = pd.to_datetime(df['date'])  # Ensure 'date' is in datetime format
     df['province'] = df['province'].astype('category')
     df['type'] = df['type'].astype('category')
@@ -192,15 +192,15 @@ with col2:
     )
     st.altair_chart(line_chart_value, use_container_width=True)
 
-    # Average Unit Value Over Time (Line Chart)
-    st.markdown("### Average Unit Value Over Time")
-    unit_value_over_time = filtered_df.groupby('date')['unit_value'].mean().reset_index()
+    # Average Unit Value Over Time of Catfishes (Line Chart)
+    st.markdown("### Average Unit Value Over Time of Catfishes")
+    unit_value_over_time = filtered_df[filtered_df['pieaces'] == 'Catfishes'].groupby('date')['unit_value'].mean().reset_index()
     line_chart_unit_value = alt.Chart(unit_value_over_time).mark_line().encode(
         x=alt.X('date:T', title='Date'),
         y=alt.Y('unit_value:Q', title='Average Unit Value (THB)'),
         tooltip=['date:T', alt.Tooltip('unit_value', format=",.2f", title="Unit Value (THB)")]
     ).properties(
-        title="Average Unit Value Over Time"
+        title="Average Unit Value Over Time of Catfishes"
     )
     st.altair_chart(line_chart_unit_value, use_container_width=True)
 
@@ -228,10 +228,11 @@ with col2:
     )
     st.altair_chart(bar_chart_value, use_container_width=True)
 
-    # Monthly Comparison of Pieaces
-    st.markdown("### Monthly Comparison of Pieaces")
+    # Monthly Comparison of Top 3 Pieaces
+    st.markdown("### Monthly Comparison of Top 3 Pieaces")
+    top_3_pieaces = filtered_df.groupby('pieaces')['total_quant_of_product'].sum().nlargest(3).index.tolist()
     filtered_df['month'] = filtered_df['date'].dt.to_period('M')  # Extract month-year for grouping
-    monthly_pieaces = filtered_df.groupby(['month', 'pieaces'])['total_quant_of_product'].sum().reset_index()
+    monthly_pieaces = filtered_df[filtered_df['pieaces'].isin(top_3_pieaces)].copy().groupby(['month', 'pieaces'])['total_quant_of_product'].sum().reset_index()
     monthly_pieaces['month'] = monthly_pieaces['month'].dt.to_timestamp()  # Convert period to timestamp for Altair
 
     # Create a line chart for monthly comparison
@@ -241,28 +242,29 @@ with col2:
         color=alt.Color('pieaces:N', title='Pieaces'),
         tooltip=['month:T', 'pieaces:N', alt.Tooltip('total_quant_of_product:Q', format=",.2f", title="Production (Tonnes)")]
     ).properties(
-        title="Monthly Comparison of Pieaces"
+        title="Monthly Comparison of Top 3 Pieaces"
     )
 
     st.altair_chart(monthly_pieaces_chart, use_container_width=True)
     
-    # Monthly Comparison of Province
-    st.markdown("### Monthly Comparison of Province")
+    # Monthly Comparison of Top 3 Provinces
+    st.markdown("### Monthly Comparison of Top 3 Provinces")
+    top_3_provinces = filtered_df.groupby('province')['total_quant_of_product'].sum().nlargest(3).index.tolist()
     filtered_df['month'] = filtered_df['date'].dt.to_period('M')  # Extract month-year for grouping
-    monthly_pieaces = filtered_df.groupby(['month', 'province'])['total_quant_of_product'].sum().reset_index()
-    monthly_pieaces['month'] = monthly_pieaces['month'].dt.to_timestamp()  # Convert period to timestamp for Altair
+    monthly_provinces = filtered_df[filtered_df['province'].isin(top_3_provinces)].copy().groupby(['month', 'province'])['total_quant_of_product'].sum().reset_index()
+    monthly_provinces['month'] = monthly_provinces['month'].dt.to_timestamp()  # Convert period to timestamp for Altair
 
     # Create a line chart for monthly comparison
-    monthly_pieaces_chart = alt.Chart(monthly_pieaces).mark_line(point=True).encode(
+    monthly_provinces_chart = alt.Chart(monthly_provinces).mark_line(point=True).encode(
         x=alt.X('month:T', title='Month'),
         y=alt.Y('total_quant_of_product:Q', title='Total Production (Tonnes)'),
         color=alt.Color('province:N', title='Province'),
         tooltip=['month:T', 'province:N', alt.Tooltip('total_quant_of_product:Q', format=",.2f", title="Production (Tonnes)")]
     ).properties(
-        title="Monthly Comparison of province"
+        title="Monthly Comparison of Top 3 Provinces"
     )
 
-    st.altair_chart(monthly_pieaces_chart, use_container_width=True)
+    st.altair_chart(monthly_provinces_chart, use_container_width=True)
 
     # Export and Import Value Over Time (Line Chart)
     st.markdown("### Export and Import Value Over Time")
@@ -328,7 +330,7 @@ with col2:
     st.altair_chart(top_net_trade_chart, use_container_width=True)
 
 # Function to export chart data to JSON
-def export_chart_to_json(data, chart_name, file_path):
+def export_chart_to_json(data, chart_name, chart_type, number_chart):
     """
     Export chart data to a JSON file in the specified format.
 
@@ -338,20 +340,25 @@ def export_chart_to_json(data, chart_name, file_path):
         file_path (str): Path to save the JSON file.
     """
     # Convert Timestamp objects to strings
-    for record in data:
+    
+    PATH_JSON = f"/Users/trungtran/Documents/VNS/MD/data/metrics_data/FISHERY_{chart_type}_{number_chart}.json"
+    
+    data_dict = data.to_dict(orient="records")
+    
+    for record in data_dict:
         for key, value in record.items():
             if isinstance(value, pd.Timestamp):
                 record[key] = value.isoformat()  # Convert to ISO 8601 string
 
     json_data = {
-        "value": data,
+        "value": data_dict,
         "chart_name": chart_name
     }
-    with open(file_path, "w") as json_file:
+    with open(PATH_JSON, "w") as json_file:
         json.dump(json_data, json_file, indent=4)
-    print(f"Chart data exported to {file_path}")
+    print(f"Chart data exported to {PATH_JSON}")
     
-def export_metrics_to_json(data, chart_name, file_path):
+def export_metrics_to_json(data, chart_name, number_chart):
     """
     Export chart data to a JSON file in the specified format.
 
@@ -360,87 +367,157 @@ def export_metrics_to_json(data, chart_name, file_path):
         chart_name (str): Name of the chart.
         file_path (str): Path to save the JSON file.
     """
+    
+    PATH_JSON = f"/Users/trungtran/Documents/VNS/MD/data/metrics_data/FISHERY_BIGNUMBER_{number_chart}.json"
 
     json_data = {
         "value": data,
         "chart_name": chart_name
     }
-    with open(file_path, "w") as json_file:
+    with open(PATH_JSON, "w") as json_file:
         json.dump(json_data, json_file, indent=4)
-    print(f"Chart data exported to {file_path}")
+    print(f"Chart data exported to {PATH_JSON}")
 
-# # Example: Export Production by Type Chart
-# production_by_type_data = production_by_type.to_dict(orient="records")
+SCENARIO = "FISHERY"
+CHART_MAPPING = {
+    "production_by_type": {"Chart": "Production by Type", "Type": "PIECHART", "Number": "1"},
+    "value_by_type": {"Chart": "Value by Type", "Type": "PIECHART", "Number": "2"},
+    "production_over_time": {"Chart": "Production Over Time", "Type": "LINECHART", "Number": "1"},
+    "value_over_time": {"Chart": "Value Over Time", "Type": "LINECHART", "Number": "2"},
+    "average_unit_value_over_time": {"Chart": "Average Unit Value Over Time of Catfishes", "Type": "LINECHART", "Number": "3"},
+    "top_production_provinces": {"Chart": "Top Provinces by Production", "Type": "BARCHART", "Number": "1"},
+    "top_value_provinces": {"Chart": "Top Provinces by Value", "Type": "BARCHART", "Number": "2"},
+    "monthly_pieaces": {"Chart": "Monthly Comparison of Top 3 Pieaces", "Type": "LINECHART", "Number": "4"},
+    "monthly_provinces": {"Chart": "Monthly Comparison of Top 3 Provinces", "Type": "LINECHART", "Number": "5"},
+    "export_import_over_time": {"Chart": "Export and Import Value Over Time", "Type": "LINECHART", "Number": "6"},
+    "net_trade_over_time": {"Chart": "Net Trade Value Over Time", "Type": "LINECHART", "Number": "7"},
+    "top_net_trade_provinces": {"Chart": "Top Provinces by Net Trade Value", "Type": "BARCHART", "Number": "3"},
+}
+
+METRICS_MAPPING = {
+    "total_production": {"Chart": "Total Production", "Type": "BIGNUMBER", "Number": "1"},
+    "total_value": {"Chart": "Total Value", "Type": "BIGNUMBER", "Number": "2"},
+    "average_unit_value": {"Chart": "Average Unit Value", "Type": "BIGNUMBER", "Number": "3"},
+    "total_employment": {"Chart": "Total Employment", "Type": "BIGNUMBER", "Number": "4"},
+}
+
+
 # export_chart_to_json(
-#     data=production_by_type_data,
-#     chart_name="production_by_type",
-#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/production_by_type.json"
+#     data=production_by_type,
+#     chart_name=CHART_MAPPING["production_by_type"]["Chart"],
+#     chart_type=CHART_MAPPING["production_by_type"]["Type"],
+#     number_chart=CHART_MAPPING["production_by_type"]["Number"]
 # )
 
-# # Example: Export Value by Type Chart
-# value_by_type_data = value_by_type.to_dict(orient="records")
 # export_chart_to_json(
-#     data=value_by_type_data,
-#     chart_name="value_by_type",
-#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/value_by_type.json"
+#     data=value_by_type,
+#     chart_name=CHART_MAPPING["value_by_type"]["Chart"],
+#     chart_type=CHART_MAPPING["value_by_type"]["Type"],
+#     number_chart=CHART_MAPPING["value_by_type"]["Number"]
 # )
 
-# # Example: Export Export and Import Value Over Time Chart
-# export_import_data = export_import_over_time.to_dict(orient="records")
 # export_chart_to_json(
-#     data=export_import_data,
-#     chart_name="export_import_over_time",
-#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/export_import_over_time.json"
+#     data=production_over_time,
+#     chart_name=CHART_MAPPING["production_over_time"]["Chart"],
+#     chart_type=CHART_MAPPING["production_over_time"]["Type"],
+#     number_chart=CHART_MAPPING["production_over_time"]["Number"]
 # )
 
-# # Example: Export Net Trade Value Over Time Chart
-# net_trade_data = net_trade_over_time.to_dict(orient="records")
 # export_chart_to_json(
-#     data=net_trade_data,
-#     chart_name="net_trade_over_time",
-#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/net_trade_over_time.json"
+#     data=value_over_time,
+#     chart_name=CHART_MAPPING["value_over_time"]["Chart"],
+#     chart_type=CHART_MAPPING["value_over_time"]["Type"],
+#     number_chart=CHART_MAPPING["value_over_time"]["Number"]
 # )
 
-# # Example: Export Top Provinces by Production Chart
-# top_production_data = top_production_provinces.to_dict(orient="records")
 # export_chart_to_json(
-#     data=top_production_data,
-#     chart_name="top_provinces_by_production",
-#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/top_provinces_by_production.json"
+#     data=unit_value_over_time,
+#     chart_name=CHART_MAPPING["average_unit_value_over_time"]["Chart"],
+#     chart_type=CHART_MAPPING["average_unit_value_over_time"]["Type"],
+#     number_chart=CHART_MAPPING["average_unit_value_over_time"]["Number"]
+# )
+# export_chart_to_json(
+#     data=top_production_provinces,
+#     chart_name=CHART_MAPPING["top_production_provinces"]["Chart"],
+#     chart_type=CHART_MAPPING["top_production_provinces"]["Type"],
+#     number_chart=CHART_MAPPING["top_production_provinces"]["Number"]
 # )
 
-# # Example: Export Top Provinces by Net Trade Value Chart
-# top_net_trade_data = top_net_trade_provinces.to_dict(orient="records")
 # export_chart_to_json(
-#     data=top_net_trade_data,
-#     chart_name="top_provinces_by_net_trade_value",
-#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/top_provinces_by_net_trade_value.json"
+#     data=top_value_provinces,
+#     chart_name=CHART_MAPPING["top_value_provinces"]["Chart"],
+#     chart_type=CHART_MAPPING["top_value_provinces"]["Type"],
+#     number_chart=CHART_MAPPING["top_value_provinces"]["Number"]
 # )
 
-# total_production = filtered_df['total_quant_of_product'].sum().to_dict(orient="records")
+# export_chart_to_json(
+#     data=monthly_pieaces,
+#     chart_name=CHART_MAPPING["monthly_pieaces"]["Chart"],
+#     chart_type=CHART_MAPPING["monthly_pieaces"]["Type"],
+#     number_chart=CHART_MAPPING["monthly_pieaces"]["Number"]
+# )
+
+# export_chart_to_json(
+#     data=monthly_provinces,
+#     chart_name=CHART_MAPPING["monthly_provinces"]["Chart"],
+#     chart_type=CHART_MAPPING["monthly_provinces"]["Type"],
+#     number_chart=CHART_MAPPING["monthly_provinces"]["Number"]
+# )
+
+# export_chart_to_json(
+#     data=export_import_over_time,
+#     chart_name=CHART_MAPPING["export_import_over_time"]["Chart"],
+#     chart_type=CHART_MAPPING["export_import_over_time"]["Type"],
+#     number_chart=CHART_MAPPING["export_import_over_time"]["Number"]
+# )
+
+# export_chart_to_json(
+#     data=net_trade_over_time,
+#     chart_name=CHART_MAPPING["net_trade_over_time"]["Chart"],
+#     chart_type=CHART_MAPPING["net_trade_over_time"]["Type"],
+#     number_chart=CHART_MAPPING["net_trade_over_time"]["Number"]
+# )
+
+# export_chart_to_json(
+#     data=top_net_trade_provinces,
+#     chart_name=CHART_MAPPING["top_net_trade_provinces"]["Chart"],
+#     chart_type=CHART_MAPPING["top_net_trade_provinces"]["Type"],
+#     number_chart=CHART_MAPPING["top_net_trade_provinces"]["Number"]
+# )
+# # Export metrics to JSON
+
 # export_metrics_to_json(
 #     data=total_production,
-#     chart_name="total_production",
-#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/total_production.json"
+#     chart_name=METRICS_MAPPING["total_production"]["Chart"],
+#     number_chart=METRICS_MAPPING["total_production"]["Number"],
 # )
 
-# total_value = filtered_df['total_value_product'].sum().to_dict(orient="records")
 # export_metrics_to_json(
 #     data=total_value,
-#     chart_name="total_value",
-#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/total_value.json"
+#     chart_name=METRICS_MAPPING["total_value"]["Chart"],
+#     number_chart=METRICS_MAPPING["total_value"]["Number"],
 # )
 
-# average_unit_value = filtered_df['unit_value'].mean()
 # export_metrics_to_json(
 #     data=average_unit_value,
-#     chart_name="average_unit_value",
-#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/average_unit_value.json"
+#     chart_name=METRICS_MAPPING["average_unit_value"]["Chart"],
+#     number_chart=METRICS_MAPPING["average_unit_value"]["Number"],
 # )
 
-# total_employment = filtered_df['total_emp'].sum().reset_index().to_dict(orient="records")
 # export_metrics_to_json(
 #     data=total_employment,
-#     chart_name="total_employment",
-#     file_path="/Users/trungtran/Documents/VNS/MD/data/metrics_data/total_employment.json"
+#     chart_name=METRICS_MAPPING["total_employment"]["Chart"],
+#     number_chart=METRICS_MAPPING["total_employment"]["Number"],
+# )
+
+# Export geos map
+geomaps_df = df.groupby('province').agg({'total_quant_of_product': 'sum'}).reset_index()
+geomaps_df['total_quant_of_product'] = geomaps_df['total_quant_of_product'].astype(float)
+geomaps_df['total_quant_of_product'] = geomaps_df['total_quant_of_product'].apply(lambda x: "{:,.2f}".format(x))
+
+# export_chart_to_json(
+#     data=geomaps_df,
+#     chart_name="Total Production by Province",
+#     chart_type="GEOMAP",
+#     number_chart="1"
 # )
